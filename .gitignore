@@ -1,0 +1,16 @@
+# Ignore Python compiled files
+__pycache__/
+*.py[cod]
+*.swp
+
+# Ignore PyCharm project settings
+.idea/
+.venv/
+venv/
+
+# Ignore log files
+*.log
+
+# Ignore environment variables
+.env
+Docs/Project_Structure.md
