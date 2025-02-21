@@ -10,15 +10,9 @@ def decompose_qc(qc):
     if len(qc.qubits) != 1:
         raise ValueError("This function only works for single-qubit circuits.")
 
-    # Transpile to Clifford-only gate set
-    clifford_basis = ['h', 's', 'sdg', 'x', 'y', 'z', 'cx']  # Clifford gates
-    transpiled_qc = transpile(qc, basis_gates=clifford_basis, optimization_level=3)
-
-    print("decomposed to Clifford set")
-
     # Replace arbitrary U gates with approximations
     qc_no_u = QuantumCircuit(1)
-    for instr, qargs, _ in transpiled_qc.data:
+    for instr, qargs, _ in qc.data:
         if instr.name == 'u':
             theta, phi, lamb = instr.params
             approx_qc = approximate_rotation_to_clifford(theta, phi, lamb)
@@ -27,7 +21,13 @@ def decompose_qc(qc):
             qc_no_u.append(instr, qargs)
     print("Rotations approximated")
 
-    final_qc = transpile_to_H_T(qc_no_u)
+    # Transpile to Clifford-only gate set
+    clifford_basis = ['h', 's', 'sdg', 'x', 'y', 'z', 'cz']  # Clifford gates
+    clofford_qc = transpile(qc_no_u, basis_gates=clifford_basis, optimization_level=3)
+
+    print("decomposed to Clifford set")
+
+    final_qc = transpile_to_H_T(clofford_qc)
     print("Fully decomposed to H and T, decomposition complete")
 
     return final_qc
@@ -37,6 +37,7 @@ def approximate_rotation_to_clifford(theta, phi, lamb):
     """Approximates a U(θ, φ, λ) gate using only Clifford gates."""
     qc = QuantumCircuit(1)
 
+    print("Approximating rotations....")
     # Approximate rotations using Clifford gates only
     if np.isclose(theta, np.pi / 2):
         qc.h(0)  # Hadamard for π/2 rotations
