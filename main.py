@@ -7,11 +7,10 @@ def main():
     """Main function to run the quantum circuit transpiler."""
     # Step 1: Define a sample quantum circuit
     qc = QuantumCircuit(1)
-    # qc.reset(0)
-    # qc.h(0)
-    # qc.x(0)
-    # qc.z(0)
-    qc.u(0, np.pi / 4, 0, 0)
+    qc.h(0)
+    qc.x(0)
+    qc.z(0)
+    qc.u(np.pi/2, 7 * np.pi / 4, 0, 0)
     # qc.u(np.pi/2, 0, 0, 0)
 
     # qc.cx(0, 1)
