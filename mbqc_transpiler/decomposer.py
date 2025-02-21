@@ -1,29 +1,55 @@
 from qiskit import QuantumCircuit, transpile
-from qiskit.circuit.equivalence_library import SessionEquivalenceLibrary
-from qiskit.quantum_info import Operator
-from qiskit.transpiler.passes import Decompose
+from qiskit.circuit.library import UGate
 import numpy as np
 
+
+def decompose_u_to_clifford(qc):
+    """Manually decomposes U(θ, φ, λ) gates using Clifford+T gates."""
+    new_qc = QuantumCircuit(1)
+    for instr, qargs, _ in qc.data:
+        if instr.name == 'u':
+            theta, phi, lamb = instr.params
+            # Decomposing U(θ, φ, λ) using H, S, Z, X only
+            new_qc.rz(phi, qargs[0])
+            new_qc.h(qargs[0])
+            new_qc.sdg(qargs[0])
+            new_qc.h(qargs[0])
+            new_qc.rz(theta, qargs[0])
+            new_qc.h(qargs[0])
+            new_qc.s(qargs[0])
+            new_qc.h(qargs[0])
+            new_qc.rz(lamb, qargs[0])
+        else:
+            new_qc.append(instr, qargs)
+    return new_qc
 
 def decompose_qc(qc):
     """Decomposes a given single-qubit quantum circuit into only Clifford gates."""
     if len(qc.qubits) != 1:
         raise ValueError("This function only works for single-qubit circuits.")
-
-    # Replace arbitrary U gates with approximations
-    qc_no_u = QuantumCircuit(1)
-    for instr, qargs, _ in qc.data:
-        if instr.name == 'u':
-            theta, phi, lamb = instr.params
-            approx_qc = approximate_rotation_to_clifford(theta, phi, lamb)
-            qc_no_u.append(approx_qc.to_instruction(), qargs)
-        else:
-            qc_no_u.append(instr, qargs)
-    print("Rotations approximated")
+    #
+    # # Replace arbitrary U gates with approximations
+    # qc_no_u = QuantumCircuit(1)
+    # for instr, qargs, _ in qc.data:
+    #     if instr.name == 'u':
+    #         theta, phi, lamb = instr.params
+    #         approx_qc = approximate_rotation_to_clifford(theta, phi, lamb)
+    #         qc_no_u.append(approx_qc.to_instruction(), qargs)
+    #     else:
+    #         qc_no_u.append(instr, qargs)
+    # print("Rotations approximated")
 
     # Transpile to Clifford-only gate set
-    clifford_basis = ['h', 's', 'sdg', 'x', 'y', 'z', 'cz']  # Clifford gates
-    clofford_qc = transpile(qc_no_u, basis_gates=clifford_basis, optimization_level=3)
+    # clifford_basis = ['h', 's', 'sdg', 'x', 'y', 'z', 'cz']  # Clifford gates
+    # clofford_qc = transpile(qc_no_u, basis_gates=clifford_basis, optimization_level=3)
+
+    new_qc = decompose_u_to_clifford(qc)
+
+    # Decomposing into Clifford+T basis (no U gates)
+    clifford_t_basis = ['h', 's', 'sdg', 't', 'tdg', 'x', 'z', 'cx']
+    decomposed_qc = transpile(new_qc, basis_gates=clifford_t_basis, optimization_level=3)
+
+    return decomposed_qc
 
     print("decomposed to Clifford set")
 
