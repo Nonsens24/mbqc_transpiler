@@ -1,7 +1,5 @@
 from qiskit import QuantumCircuit, transpile
-from qiskit.circuit.equivalence_library import SessionEquivalenceLibrary
-from qiskit.quantum_info import Operator
-from qiskit.transpiler.passes import Decompose
+from mbqc_transpiler import utils
 import numpy as np
 
 
@@ -22,7 +20,7 @@ def decompose_qc(qc):
     print("Rotations approximated")
 
     # Transpile to Clifford-only gate set
-    clifford_basis = ['h', 's', 'sdg', 'x', 'y', 'z', 'cz']  # Clifford gates
+    clifford_basis = ['h', 's', 't', 'sdg', 'x', 'y', 'z', 'cz']  # Clifford gates
     clofford_qc = transpile(qc_no_u, basis_gates=clifford_basis, optimization_level=3)
 
     print("decomposed to Clifford set")
@@ -37,20 +35,43 @@ def approximate_rotation_to_clifford(theta, phi, lamb):
     """Approximates a U(θ, φ, λ) gate using only Clifford gates."""
     qc = QuantumCircuit(1)
 
+
+
     print("Approximating rotations....")
     # Approximate rotations using Clifford gates only
-    if np.isclose(theta, np.pi / 2):
-        qc.h(0)  # Hadamard for π/2 rotations
-    if np.isclose(phi, np.pi / 2):
-        qc.s(0)  # S gate for phase shifts
-    if np.isclose(lamb, np.pi / 2):
-        qc.s(0)
-    if np.isclose(phi, np.pi):
-        qc.z(0)  # Pauli-Z for π phase shift
-    if np.isclose(lamb, np.pi):
-        qc.z(0)
-    if np.isclose(theta, np.pi):
-        qc.x(0)  # Pauli-X for π rotations
+    if utils.is_close_to_multiple(theta, np.pi/2):
+        multiple = int(np.round(theta / (np.pi/2)))
+        for i in range(multiple):
+            qc.h(0)
+
+    elif utils.is_close_to_multiple(theta, np.pi/4):
+        multiple = int(np.round(theta / (np.pi/4)))
+        for i in range(multiple):
+            qc.h(0)  # Move Z-axis rotation to X-axis
+            qc.t(0)  # Apply π/4 rotation
+            qc.h(0)  # Move back to original basis
+
+    if utils.is_close_to_multiple(phi, np.pi / 2):
+        multiple = int(np.round(theta / (np.pi / 2)))
+        for i in range(multiple):
+            qc.s(0)  # S gate for phase shifts
+
+    elif utils.is_close_to_multiple(phi, np.pi / 4):
+        multiple = int(np.round(phi / (np.pi / 4)))
+        for i in range(multiple):
+            qc.t(0)  # S gate for phase shifts
+
+    if utils.is_close_to_multiple(lamb, np.pi/2):
+        multiple = int(np.round(theta / (np.pi/2)))
+        for i in range(multiple):
+            qc.h(0)
+
+    elif utils.is_close_to_multiple(lamb, np.pi/4):
+        multiple = int(np.round(theta / (np.pi/4)))
+        for i in range(multiple):
+            qc.h(0)  # Move Z-axis rotation to X-axis
+            qc.t(0)  # Apply π/4 rotation
+            qc.h(0)  # Move back to original basis
 
     return qc
 
