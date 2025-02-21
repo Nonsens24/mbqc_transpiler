@@ -28,7 +28,7 @@ def decompose_qc(qc):
     print("Rotations approximated")
 
     final_qc = transpile_to_H_T(qc_no_u)
-    print("Fully decomposed to H and T")
+    print("Fully decomposed to H and T, decomposition complete")
 
     return final_qc
 
