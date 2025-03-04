@@ -1,6 +1,6 @@
 from qiskit import QuantumCircuit
 
-from examples.MBQC_examples import mbqc_pauli_x
+import examples.MBQC_examples as mbqc_examples
 from mbqc_transpiler.decomposer import decompose_qc
 import numpy as np
 import examples.MBQC_examples
@@ -30,7 +30,8 @@ def main():
 
 
     """Test MBQC circs:"""
-    mbqc_pauli_x()
+    mbqc_examples.mbqc_pauli_x()
+    mbqc_examples.mbqc_arbitrary_x(np.pi/4)
 
 
     # Step 3: Visualize the cluster state graph
