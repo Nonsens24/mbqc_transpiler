@@ -32,6 +32,8 @@ def main():
     """Test MBQC circs:"""
     mbqc_examples.mbqc_pauli_x()
     mbqc_examples.mbqc_arbitrary_x(np.pi/4)
+    mbqc_examples.mbqc_hadamard()
+    mbqc_examples.mbqc_arbitrary_u(np.pi/2, np.pi/8, np.pi/4)
 
 
     # Step 3: Visualize the cluster state graph
