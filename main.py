@@ -1,4 +1,5 @@
 from qiskit import QuantumCircuit
+from qiskit_aer.backends.compatibility import Statevector
 
 import examples.MBQC_examples as mbqc_examples
 from mbqc_transpiler.decomposer import decompose_qc
@@ -28,13 +29,15 @@ def main():
     #
     # print(ht_circ)
 
-
     """Test MBQC circs:"""
-    mbqc_examples.mbqc_pauli_x()
-    mbqc_examples.mbqc_arbitrary_x(np.pi/4)
-    mbqc_examples.mbqc_arbitrary_z(np.pi)
-    mbqc_examples.mbqc_hadamard()
-    mbqc_examples.mbqc_arbitrary_u(0, np.pi, 0)
+    input_state = Statevector([1/2, (3**0.5)/2])
+
+    """ Examples of gates: """
+    # mbqc_examples.mbqc_pauli_x()
+    mbqc_examples.mbqc_arbitrary_x(np.pi/2)
+    mbqc_examples.mbqc_arbitrary_z(input_state, np.pi/3)
+    # mbqc_examples.mbqc_hadamard()
+    # mbqc_examples.mbqc_arbitrary_u(0, np.pi, 0)
 
 
     # Step 3: Visualize the cluster state graph
