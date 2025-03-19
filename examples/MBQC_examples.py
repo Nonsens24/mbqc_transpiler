@@ -22,9 +22,16 @@ def format_angle(angle):
     frac = Fraction(angle / np.pi).limit_denominator(100)  # Convert to fraction of π
     return f"{frac.numerator}π/{frac.denominator}" if frac.denominator != 1 else f"{frac.numerator}π"
 
-def measure_in_xy_plane(qc, qubit, alpha, classical_bit):
+def measure_in_xy_plane(qc, qubit, alpha, classical_bit, dep_angle=False, depends_on_cbit=-1):
     """Measure a qubit in the XY-plane at an arbitrary angle alpha."""
-    qc.rz(alpha, qubit)  # Rotate around Z-axis by alpha
+    # Artificially change a to -a since qiskit doesnt support adaptive MBQC
+    print("cbit: ", depends_on_cbit, " dep angle= ", dep_angle)
+    if dep_angle:
+        qc.rz(-alpha, qubit).c_if(depends_on_cbit, 1)
+        qc.rz(alpha, qubit).c_if(depends_on_cbit, 0)
+    else:
+        qc.rz(alpha, qubit)  # Rotate around Z-axis by alpha
+
     qc.ry(-np.pi/2, qubit)  # Rotate into the XY-plane
     qc.measure(qubit, classical_bit)  # Standard computational basis measurement
 
@@ -94,15 +101,16 @@ def mbqc_pauli_x():
 
     return transpiled_qc
 
-def mbqc_arbitrary_x(alpha, graph = True):
+def mbqc_arbitrary_x(input_state, alpha, graph = True):
     """Simulates MBQC for the Pauli-X gate with explicit transpilation and classical control."""
     print("Example: MBQC arbitrary X-rotation")
 
     # Step 1: Create a 2-qubit quantum circuit
     qc = QuantumCircuit(3, 3)  # 2 qubits, 1 classical bit for measurement storage
+    qc.initialize(input_state, 0)
 
     # Step 1: Initialize |+> states -- includes 0 to range-1
-    for q in range(3):
+    for q in range(1, 3):
         qc.h(q)
 
     qc.h(0)  # Test to see if x is performed on 0
@@ -163,7 +171,6 @@ def mbqc_arbitrary_x(alpha, graph = True):
 
     return transpiled_qc
 
-
 def mbqc_arbitrary_z(input_state, alpha, graph=False):
     """Simulates MBQC for an arbitrary Z-rotation using a linear cluster state."""
     print("Example: MBQC Arbitrary Z-Rotation")
@@ -221,7 +228,6 @@ def mbqc_arbitrary_z(input_state, alpha, graph=False):
 
     return transpiled_qc
 
-
 def mbqc_arbitrary_u(input_state, alpha, beta, gamma):
     """Simulates MBQC for the Pauli-X gate with explicit transpilation and classical control."""
     print("Example: MBQC arbitrary U-rotation")
@@ -235,25 +241,24 @@ def mbqc_arbitrary_u(input_state, alpha, beta, gamma):
         qc.h(q)
 
     #Step E: Entangle Cluster State
-    for q in range(5):
+    for q in range(4):
         qc.cz(q, q + 1) # Apply CZ between consecutive qubits
 
-    #Step M: Measure the states
-    # Define measurement angles for -X, -Y, -Z application
-    angles = [-alpha, 0, 0, -beta, -gamma, 0]
-
+    # Step M: Measure the states
     measure_in_xy_plane(qc, 0, gamma, 0)
-    measure_in_xy_plane(qc, 1, beta, 1)
-    measure_in_xy_plane(qc, 2, alpha, 2)
+    measure_in_xy_plane(qc, 1, beta, 1, dep_angle=True, depends_on_cbit=0)
+    measure_in_xy_plane(qc, 2, alpha, 2, dep_angle=True, depends_on_cbit=1)
     measure_in_xy_plane(qc, 3, 0, 3)
 
-    # **Save the final state before measuring the output qubit**
+    # Step C: Apply Corrections - XOR the two values for cx + xy mod2
+    qc.z(4).c_if(0, 1)
+    qc.z(4).c_if(2, 1)
+    qc.x(4).c_if(1, 1)
+    qc.x(4).c_if(3, 1)
+
     qc.save_density_matrix()
 
-    # MEasure the output bit
-    # qc.measure(6, 6)
-
-    # Step 6: Simulate using a perfect (noiseless) quantum simulator
+    # Simulate using a perfect (noiseless) quantum simulator
     sim = AerSimulator(method='density_matrix')  # Perfect noiseless simulation
     transpiled_qc = transpile(qc, sim, optimization_level=0)
 
@@ -264,19 +269,18 @@ def mbqc_arbitrary_u(input_state, alpha, beta, gamma):
     full_density_matrix = result.data()["density_matrix"]
 
     #DM after RzRxRz
-    reduced_density_matrix = qi.partial_trace(full_density_matrix, [0, 1, 2, 3, 4, 5])
+    reduced_density_matrix = qi.partial_trace(full_density_matrix, [0, 1, 2, 3])
 
     #Print parameters
     print("Angles as multiples of π:")
     print(f"α = {format_angle(alpha)} rad")
     print(f"β = {format_angle(beta)} rad")
     print(f"γ = {format_angle(gamma)} rad")
-    print("Output Qubit State (Density Matrix) after RzRxRz:\n", reduced_density_matrix)
+    print("Output Qubit State (Density Matrix) after RxRzRx:\n", reduced_density_matrix)
 
     # Output the statevector (final quantum state)
-    # final_state = result.get_counts(transpiled_qc)
     counts = result.get_counts(transpiled_qc)
-    counts_q7 = marginal_counts(counts, [6])
+    counts_q7 = marginal_counts(counts, [4])
     plot_histogram(counts_q7, title='Example: Arbitrary U State counts').show()
 
     # plot_state_city(final_statevector, title="state vector")

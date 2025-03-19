@@ -30,14 +30,15 @@ def main():
     # print(ht_circ)
 
     """Test MBQC circs:"""
-    input_state = Statevector([1/2, (3**0.5)/2])
+    # input_state = Statevector([1/2, (3**0.5)/2])
+    input_state = Statevector([0, 1])
 
     """ Examples of gates: """
     # mbqc_examples.mbqc_pauli_x()
-    mbqc_examples.mbqc_arbitrary_x(np.pi/2)
+    mbqc_examples.mbqc_arbitrary_x(input_state, np.pi)
     mbqc_examples.mbqc_arbitrary_z(input_state, np.pi/3)
     # mbqc_examples.mbqc_hadamard()
-    # mbqc_examples.mbqc_arbitrary_u(0, np.pi, 0)
+    # mbqc_examples.mbqc_arbitrary_u(input_state, np.pi/2, np.pi/4, np.pi/8)
 
 
     # Step 3: Visualize the cluster state graph
